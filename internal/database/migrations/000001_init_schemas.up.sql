@@ -4,7 +4,7 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'user',
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE products (
@@ -12,7 +12,7 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     price DECIMAL(10,2) DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
 
 CREATE TABLE cart_items (
@@ -21,5 +21,5 @@ CREATE TABLE cart_items (
     product_id BIGINT NOT NULL REFERENCES products(id),
     quantity INT DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
 );
