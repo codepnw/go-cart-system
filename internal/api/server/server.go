@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 
+	"github.com/codepnw/go-cart-system/internal/api/router"
 	"github.com/codepnw/go-cart-system/internal/database"
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,6 +21,8 @@ func NewServer(config ServerConfig) {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	router.SetupRoutes(app, db)
 
 	if err = app.Listen(":" + config.APP_PORT); err != nil {
 		log.Fatal(err)

@@ -1,13 +1,14 @@
 package dto
 
 type CreateCartItems struct {
-	CartID int64              `json:"cart_id"`
-	Items  []*CartItemRequest `json:"items"`
+	CartID int64              `json:"cart_id" validate:"required"`
+	Items  []*CartItemRequest `json:"items" validate:"required,min=1"`
 }
 
 type UpdateCartItems struct {
-	ID       int64 `json:"id"`
-	Quantity int   `json:"quantity"`
+	CartID    int64 `json:"cart_id" validate:"required"`
+	ProductID int64 `json:"product_id" validate:"required"`
+	Quantity  int   `json:"quantity" validate:"required,gte=1,lte=30"`
 }
 
 type CartItemRequest struct {

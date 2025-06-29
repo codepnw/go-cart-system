@@ -63,8 +63,9 @@ func (u *cartUsecase) UpdateQuantity(ctx context.Context, input *dto.UpdateCartI
 	defer cancel()
 
 	item := domain.CartItems{
-		ID:       input.ID,
-		Quantity: input.Quantity,
+		ID:        input.CartID,
+		Quantity:  input.Quantity,
+		ProductID: input.ProductID,
 	}
 
 	return u.repo.UpdateQuantity(ctx, &item)

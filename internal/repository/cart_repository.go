@@ -61,7 +61,7 @@ func (r *cartRepository) AddItems(ctx context.Context, items []*domain.CartItems
 
 func (r *cartRepository) GetCart(ctx context.Context, cartID int64) ([]*dto.CartItemDetailsResponse, error) {
 	query := `
-		SELETE 
+		SELECT 
 			ci.id AS cart_item_id, 
 			ci.product_id,
 			p.name AS product_name,
@@ -101,9 +101,9 @@ func (r *cartRepository) GetCart(ctx context.Context, cartID int64) ([]*dto.Cart
 }
 
 func (r *cartRepository) UpdateQuantity(ctx context.Context, input *domain.CartItems) error {
-	query := `UPDATE cart_items SET quantity = $1 WHERE id = $2`
+	query := `UPDATE cart_items SET quantity = $1 WHERE id = $2 AND product_id = $3`
 
-	res, err := r.db.ExecContext(ctx, query, input.Quantity, input.ID)
+	res, err := r.db.ExecContext(ctx, query, input.Quantity, input.ID, input.ProductID)
 	if err != nil {
 		return err
 	}
