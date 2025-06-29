@@ -26,7 +26,7 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 
 func (r *productRepository) Create(ctx context.Context, input *domain.Product) error {
 	query := `
-		INSERT INTO product (name, price) VALUES ($1, $2)
+		INSERT INTO products (name, price) VALUES ($1, $2)
 	`
 	res, err := r.db.ExecContext(ctx, query, input.Name, input.Price)
 	if err != nil {
