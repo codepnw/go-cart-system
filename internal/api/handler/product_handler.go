@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"net/http"
-
+	"github.com/codepnw/go-cart-system/internal/api/response"
 	"github.com/codepnw/go-cart-system/internal/dto"
 	"github.com/codepnw/go-cart-system/internal/usecase"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
+
+const paramIDKey = "id"
 
 type productHandler struct {
 	uc       usecase.ProductUsecase
@@ -25,110 +26,76 @@ func (h *productHandler) CreateProduct(ctx *fiber.Ctx) error {
 	var req dto.CreateProduct
 
 	if err := ctx.BodyParser(&req); err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	if err := h.uc.CreateProduct(ctx.Context(), &req); err != nil {
-		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.InternalServerError(ctx, err)
 	}
 
-	return ctx.Status(http.StatusCreated).JSON(&fiber.Map{
-		"message": "new product created",
-	})
+	return response.CreastedResponse(ctx, "product created", nil)
 }
 
 func (h *productHandler) GetProduct(ctx *fiber.Ctx) error {
-	id, err := ctx.ParamsInt("id")
+	id, err := ctx.ParamsInt(paramIDKey)
 	if err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	product, err := h.uc.GetProduct(ctx.Context(), int64(id))
 	if err != nil {
-		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.InternalServerError(ctx, err)
 	}
 
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"data": product,
-	})
+	return response.SuccessResponse(ctx, "", product)
 }
 
 func (h *productHandler) ListProducts(ctx *fiber.Ctx) error {
 	products, err := h.uc.ListProducts(ctx.Context())
 	if err != nil {
-		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.InternalServerError(ctx, err)
 	}
 
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"data": products,
-	})
+	return response.SuccessResponse(ctx, "", products)
 }
 
 func (h *productHandler) UpdateProduct(ctx *fiber.Ctx) error {
-	id, err := ctx.ParamsInt("id")
+	id, err := ctx.ParamsInt(paramIDKey)
 	if err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	var req dto.UpdateProduct
 
 	if err := ctx.BodyParser(&req); err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	req.ID = int64(id)
 	if err := h.uc.UpdateProduct(ctx.Context(), &req); err != nil {
-		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.InternalServerError(ctx, err)
 	}
 
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "product updated",
-	})
+	return response.SuccessResponse(ctx, "product updated", nil)
 }
 
 func (h *productHandler) DeleteProduct(ctx *fiber.Ctx) error {
-	id, err := ctx.ParamsInt("id")
+	id, err := ctx.ParamsInt(paramIDKey)
 	if err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.BadRequestResponse(ctx, err.Error())
 	}
 
 	if err = h.uc.DeleteProduct(ctx.Context(), int64(id)); err != nil {
-		return ctx.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"message": err.Error(),
-		})
+		return response.InternalServerError(ctx, err)
 	}
 
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "product deleted",
-	})
+	return response.SuccessResponse(ctx, "", nil)
 }
