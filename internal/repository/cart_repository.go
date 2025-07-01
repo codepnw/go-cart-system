@@ -8,7 +8,7 @@ import (
 
 	"github.com/codepnw/go-cart-system/internal/domain"
 	"github.com/codepnw/go-cart-system/internal/dto"
-	"github.com/codepnw/go-cart-system/internal/errs"
+	"github.com/codepnw/go-cart-system/internal/utils/errs"
 )
 
 type CartRepository interface {

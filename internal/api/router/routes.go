@@ -12,6 +12,7 @@ import (
 func SetupRoutes(app *fiber.App, db *sql.DB) {
 	cartRoutes(app, db)
 	productRoutes(app, db)
+	userRoutes(app, db)
 }
 
 func cartRoutes(app *fiber.App, db *sql.DB) {
@@ -39,4 +40,27 @@ func productRoutes(app *fiber.App, db *sql.DB) {
 	routes.Get("/", hdl.ListProducts)
 	routes.Patch("/:id", hdl.UpdateProduct)
 	routes.Delete("/:id", hdl.DeleteProduct)
+}
+
+func userRoutes(app *fiber.App, db *sql.DB) {
+	repo := repository.NewUserRepository(db)
+	uc := usecase.NewUserUsecase(repo)
+	hdl := handler.NewUserHandler(uc)
+
+	// Public
+	pub := app.Group("/auth")
+	pub.Post("/register", hdl.Register)
+	pub.Post("/login", hdl.Login)
+
+	// Private
+	// 	get profile
+	// 	update profile
+	//	logout
+	//	refresh token
+
+	// Admin
+	//	list users
+	//	get user
+	//	update role
+	//	delete user
 }

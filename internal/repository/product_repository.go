@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/codepnw/go-cart-system/internal/domain"
-	"github.com/codepnw/go-cart-system/internal/errs"
+	"github.com/codepnw/go-cart-system/internal/utils/errs"
 )
 
 type ProductRepository interface {
