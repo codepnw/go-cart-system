@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/codepnw/go-cart-system/config"
 	"github.com/codepnw/go-cart-system/internal/domain"
 	"github.com/codepnw/go-cart-system/internal/dto"
 	"github.com/codepnw/go-cart-system/internal/repository"
@@ -16,11 +17,15 @@ type UserUsecase interface {
 }
 
 type userUsecase struct {
-	repo repository.UserRepository
+	repo   repository.UserRepository
+	config config.EnvConfig
 }
 
-func NewUserUsecase(repo repository.UserRepository) UserUsecase {
-	return &userUsecase{repo: repo}
+func NewUserUsecase(repo repository.UserRepository, config config.EnvConfig) UserUsecase {
+	return &userUsecase{
+		repo:   repo,
+		config: config,
+	}
 }
 
 func (u *userUsecase) Register(ctx context.Context, req *dto.CreateUser) error {
@@ -57,11 +62,8 @@ func (u *userUsecase) Login(ctx context.Context, req *dto.UserCredential) (*dto.
 		return nil, errs.ErrInvalidCredentials
 	}
 
-	// TODO: change key later
-	jwt := security.SetupJWT("secret-key", "refresh-key")
-	jwt.ID = user.ID
-	jwt.Email = user.Email
-	jwt.Role = user.Role
+	// config jwt token
+	jwt := security.NewTokenConfig(u.config, user)
 
 	accessToken, err := jwt.GenerateAccessToken()
 	if err != nil {

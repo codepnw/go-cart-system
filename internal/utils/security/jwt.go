@@ -4,36 +4,40 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/codepnw/go-cart-system/config"
+	"github.com/codepnw/go-cart-system/internal/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type TokenConfig struct {
-	ID    int64
-	Email string
-	Role  string
-
+type tokenConfig struct {
+	id         int64
+	email      string
+	role       string
 	secretKey  string
 	refreshKey string
 }
 
-func SetupJWT(secretKey, refreshKey string) *TokenConfig {
-	return &TokenConfig{
-		secretKey:  secretKey,
-		refreshKey: refreshKey,
+func NewTokenConfig(config config.EnvConfig, user *domain.User) *tokenConfig {
+	return &tokenConfig{
+		id:         user.ID,
+		email:      user.Email,
+		role:       user.Role,
+		secretKey:  config.JWTSecretKey,
+		refreshKey: config.JWTRefreshKey,
 	}
 }
 
-func (t *TokenConfig) GenerateAccessToken() (string, error) {
+func (t *tokenConfig) GenerateAccessToken() (string, error) {
 	duration := time.Hour * 24
-	return t.generateToken(t.ID, t.Email, t.Role, t.secretKey, duration)
+	return t.generateToken(t.id, t.email, t.role, t.secretKey, duration)
 }
 
-func (t *TokenConfig) GenerateRefreshToken() (string, error) {
+func (t *tokenConfig) GenerateRefreshToken() (string, error) {
 	duration := time.Hour * 24 * 7
-	return t.generateToken(t.ID, t.Email, t.Role, t.refreshKey, duration)
+	return t.generateToken(t.id, t.email, t.role, t.refreshKey, duration)
 }
 
-func (t *TokenConfig) generateToken(id int64, email, role, key string, exp time.Duration) (string, error) {
+func (t *tokenConfig) generateToken(id int64, email, role, key string, exp time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": id,
 		"email":   email,

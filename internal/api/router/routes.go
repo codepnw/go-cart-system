@@ -3,22 +3,31 @@ package router
 import (
 	"database/sql"
 
+	"github.com/codepnw/go-cart-system/config"
 	"github.com/codepnw/go-cart-system/internal/api/handler"
 	"github.com/codepnw/go-cart-system/internal/repository"
 	"github.com/codepnw/go-cart-system/internal/usecase"
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRoutes(app *fiber.App, db *sql.DB) {
-	cartRoutes(app, db)
-	productRoutes(app, db)
-	userRoutes(app, db)
+type routesConfig struct {
+	app    *fiber.App
+	db     *sql.DB
+	config *config.EnvConfig
 }
 
-func cartRoutes(app *fiber.App, db *sql.DB) {
-	routes := app.Group("/cart")
+func NewAPIRoutes(app *fiber.App, db *sql.DB, config *config.EnvConfig) *routesConfig {
+	return &routesConfig{
+		app:    app,
+		db:     db,
+		config: config,
+	}
+}
 
-	repo := repository.NewCartRepository(db)
+func (r *routesConfig) CartRoutes() {
+	routes := r.app.Group("/cart")
+
+	repo := repository.NewCartRepository(r.db)
 	uc := usecase.NewCartUsecase(repo)
 	hdl := handler.NewCartHandler(uc)
 
@@ -28,10 +37,10 @@ func cartRoutes(app *fiber.App, db *sql.DB) {
 	routes.Delete("/:id", hdl.DeleteItem)
 }
 
-func productRoutes(app *fiber.App, db *sql.DB) {
-	routes := app.Group("/products")
+func (r *routesConfig) ProductRoutes() {
+	routes := r.app.Group("/products")
 
-	repo := repository.NewProductRepository(db)
+	repo := repository.NewProductRepository(r.db)
 	uc := usecase.NewProductUsecase(repo)
 	hdl := handler.NewProductHandler(uc)
 
@@ -42,13 +51,13 @@ func productRoutes(app *fiber.App, db *sql.DB) {
 	routes.Delete("/:id", hdl.DeleteProduct)
 }
 
-func userRoutes(app *fiber.App, db *sql.DB) {
-	repo := repository.NewUserRepository(db)
-	uc := usecase.NewUserUsecase(repo)
+func (r *routesConfig) UserRoutes() {
+	repo := repository.NewUserRepository(r.db)
+	uc := usecase.NewUserUsecase(repo, *r.config)
 	hdl := handler.NewUserHandler(uc)
 
 	// Public
-	pub := app.Group("/auth")
+	pub := r.app.Group("/auth")
 	pub.Post("/register", hdl.Register)
 	pub.Post("/login", hdl.Login)
 
