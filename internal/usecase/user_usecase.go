@@ -63,14 +63,14 @@ func (u *userUsecase) Login(ctx context.Context, req *dto.UserCredential) (*dto.
 	}
 
 	// config jwt token
-	jwt := security.NewTokenConfig(u.config, user)
+	jwt := security.NewTokenConfig(u.config)
 
-	accessToken, err := jwt.GenerateAccessToken()
+	accessToken, err := jwt.GenerateAccessToken(user)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := jwt.GenerateRefreshToken()
+	refreshToken, err := jwt.GenerateRefreshToken(user)
 	if err != nil {
 		return nil, err
 	}

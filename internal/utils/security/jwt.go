@@ -1,7 +1,9 @@
 package security
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/codepnw/go-cart-system/config"
@@ -9,35 +11,29 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type tokenConfig struct {
-	id         int64
-	email      string
-	role       string
+type TokenConfig struct {
 	secretKey  string
 	refreshKey string
 }
 
-func NewTokenConfig(config config.EnvConfig, user *domain.User) *tokenConfig {
-	return &tokenConfig{
-		id:         user.ID,
-		email:      user.Email,
-		role:       user.Role,
+func NewTokenConfig(config config.EnvConfig) *TokenConfig {
+	return &TokenConfig{
 		secretKey:  config.JWTSecretKey,
 		refreshKey: config.JWTRefreshKey,
 	}
 }
 
-func (t *tokenConfig) GenerateAccessToken() (string, error) {
+func (t *TokenConfig) GenerateAccessToken(user *domain.User) (string, error) {
 	duration := time.Hour * 24
-	return t.generateToken(t.id, t.email, t.role, t.secretKey, duration)
+	return t.generateToken(user.ID, user.Email, user.Role, t.secretKey, duration)
 }
 
-func (t *tokenConfig) GenerateRefreshToken() (string, error) {
+func (t *TokenConfig) GenerateRefreshToken(user *domain.User) (string, error) {
 	duration := time.Hour * 24 * 7
-	return t.generateToken(t.id, t.email, t.role, t.refreshKey, duration)
+	return t.generateToken(user.ID, user.Email, user.Role, t.refreshKey, duration)
 }
 
-func (t *tokenConfig) generateToken(id int64, email, role, key string, exp time.Duration) (string, error) {
+func (t *TokenConfig) generateToken(id int64, email, role, key string, exp time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": id,
 		"email":   email,
@@ -51,4 +47,33 @@ func (t *tokenConfig) generateToken(id int64, email, role, key string, exp time.
 	}
 
 	return tokenStr, nil
+}
+
+func (t *TokenConfig) VerifyToken(tokenStr, jwtKey string) (*domain.User, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Println(t.Header)
+			return nil, errors.New("unknow signing method")
+		}
+		return []byte(jwtKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		if float64(time.Now().Unix()) > claims["exp"].(float64) {
+			return nil, errors.New("token is expired")
+		}
+
+		user := domain.User{}
+		user.ID = int64(claims["user_id"].(float64))
+		user.Email = claims["email"].(string)
+		user.Role = claims["role"].(string)
+
+		return &user, nil
+	}
+
+	return nil, errors.New("token verification failed")
 }

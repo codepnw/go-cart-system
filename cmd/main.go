@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/codepnw/go-cart-system/config"
+	"github.com/codepnw/go-cart-system/internal/api/middleware"
 	"github.com/codepnw/go-cart-system/internal/api/router"
 	"github.com/codepnw/go-cart-system/internal/database"
 	"github.com/gofiber/fiber/v2"
@@ -13,7 +14,7 @@ const envPath = "dev.env"
 
 func main() {
 	// config
-	config, err := config.InitEnvConfig(envPath)
+	cfg, err := config.InitEnvConfig(envPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,20 +22,28 @@ func main() {
 	app := fiber.New()
 
 	// database
-	db, err := database.NewPostgresDB(config.DBAddr)
+	db, err := database.NewPostgresDB(cfg.DBAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	mid := middleware.NewMiddleware(cfg)
+
 	// router
-	routes := router.NewAPIRoutes(app, db, config)
+	routesConfig := &router.RoutesConfig{
+		App:       app,
+		DB:        db,
+		Config:    cfg,
+		Middlware: mid,
+	}
+	routes := router.NewAPIRoutes(routesConfig)
 	routes.CartRoutes()
 	routes.ProductRoutes()
 	routes.UserRoutes()
 
 	// run server
-	if err = app.Listen(config.AppPort); err != nil {
+	if err = app.Listen(cfg.AppPort); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -5,29 +5,32 @@ import (
 
 	"github.com/codepnw/go-cart-system/config"
 	"github.com/codepnw/go-cart-system/internal/api/handler"
+	"github.com/codepnw/go-cart-system/internal/api/middleware"
 	"github.com/codepnw/go-cart-system/internal/repository"
 	"github.com/codepnw/go-cart-system/internal/usecase"
 	"github.com/gofiber/fiber/v2"
 )
 
-type routesConfig struct {
-	app    *fiber.App
-	db     *sql.DB
-	config *config.EnvConfig
+type RoutesConfig struct {
+	App       *fiber.App
+	DB        *sql.DB
+	Config    *config.EnvConfig
+	Middlware *middleware.Middleware
 }
 
-func NewAPIRoutes(app *fiber.App, db *sql.DB, config *config.EnvConfig) *routesConfig {
-	return &routesConfig{
-		app:    app,
-		db:     db,
-		config: config,
+func NewAPIRoutes(cfg *RoutesConfig) *RoutesConfig {
+	return &RoutesConfig{
+		App:       cfg.App,
+		DB:        cfg.DB,
+		Config:    cfg.Config,
+		Middlware: cfg.Middlware,
 	}
 }
 
-func (r *routesConfig) CartRoutes() {
-	routes := r.app.Group("/cart")
+func (r *RoutesConfig) CartRoutes() {
+	routes := r.App.Group("/cart", r.Middlware.Authorize())
 
-	repo := repository.NewCartRepository(r.db)
+	repo := repository.NewCartRepository(r.DB)
 	uc := usecase.NewCartUsecase(repo)
 	hdl := handler.NewCartHandler(uc)
 
@@ -37,10 +40,10 @@ func (r *routesConfig) CartRoutes() {
 	routes.Delete("/:id", hdl.DeleteItem)
 }
 
-func (r *routesConfig) ProductRoutes() {
-	routes := r.app.Group("/products")
+func (r *RoutesConfig) ProductRoutes() {
+	routes := r.App.Group("/products", r.Middlware.Authorize())
 
-	repo := repository.NewProductRepository(r.db)
+	repo := repository.NewProductRepository(r.DB)
 	uc := usecase.NewProductUsecase(repo)
 	hdl := handler.NewProductHandler(uc)
 
@@ -51,13 +54,13 @@ func (r *routesConfig) ProductRoutes() {
 	routes.Delete("/:id", hdl.DeleteProduct)
 }
 
-func (r *routesConfig) UserRoutes() {
-	repo := repository.NewUserRepository(r.db)
-	uc := usecase.NewUserUsecase(repo, *r.config)
+func (r *RoutesConfig) UserRoutes() {
+	repo := repository.NewUserRepository(r.DB)
+	uc := usecase.NewUserUsecase(repo, *r.Config)
 	hdl := handler.NewUserHandler(uc)
 
 	// Public
-	pub := r.app.Group("/auth")
+	pub := r.App.Group("/auth")
 	pub.Post("/register", hdl.Register)
 	pub.Post("/login", hdl.Login)
 

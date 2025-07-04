@@ -12,6 +12,12 @@ func BadRequestResponse(ctx *fiber.Ctx, msg string) error {
 	})
 }
 
+func UnauthorizedResponse(ctx *fiber.Ctx, msg string) error {
+	return ctx.Status(http.StatusUnauthorized).JSON(&fiber.Map{
+		"message": msg,
+	})
+}
+
 func NotFoundResponse(ctx *fiber.Ctx, msg string) error {
 	return ctx.Status(http.StatusNotFound).JSON(&fiber.Map{
 		"message": msg,
