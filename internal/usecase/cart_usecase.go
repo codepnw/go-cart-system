@@ -14,7 +14,7 @@ const queryTimeOut = time.Second * 5
 
 type CartUsecase interface {
 	AddItems(ctx context.Context, req *dto.CreateCartItems) error
-	GetCart(ctx context.Context, cartID int64) ([]*dto.CartItemDetailsResponse, error)
+	GetCart(ctx context.Context, userID int64) (*dto.CartResponse, error)
 	UpdateQuantity(ctx context.Context, input *dto.UpdateCartItems) error
 	DeleteItem(ctx context.Context, id int64) error
 }
@@ -51,11 +51,28 @@ func (u *cartUsecase) AddItems(ctx context.Context, req *dto.CreateCartItems) er
 	return u.repo.AddItems(ctx, items)
 }
 
-func (u *cartUsecase) GetCart(ctx context.Context, cartID int64) ([]*dto.CartItemDetailsResponse, error) {
+func (u *cartUsecase) GetCart(ctx context.Context, userID int64) (*dto.CartResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	return u.repo.GetCart(ctx, cartID)
+	items, err := u.repo.GetCart(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalItems int
+	var totalPrice float64
+
+	for _, item := range items {
+		totalItems += item.Quantity
+		totalPrice += float64(item.Quantity) * item.Price
+	}
+
+	return &dto.CartResponse{
+		Items:      items,
+		TotalItems: totalItems,
+		TotalPrice: totalPrice,
+	}, nil
 }
 
 func (u *cartUsecase) UpdateQuantity(ctx context.Context, input *dto.UpdateCartItems) error {

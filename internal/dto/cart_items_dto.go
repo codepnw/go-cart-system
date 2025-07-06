@@ -16,11 +16,17 @@ type CartItemRequest struct {
 	Quantity  int   `json:"quantity"`
 }
 
-type CartItemDetailsResponse struct {
+type CartItem struct {
 	ID          int64   `db:"cart_item_id"`
 	ProductID   int64   `db:"product_id"`
 	ProductName string  `db:"product_name"`
 	Quantity    int     `db:"quantity"`
 	Price       float64 `db:"price"`
 	Total       float64 `db:"total_price_item"`
+}
+
+type CartResponse struct {
+	Items      []*CartItem `json:"items"`
+	TotalItems int         `json:"total_items"`
+	TotalPrice float64     `json:"total_price"`
 }

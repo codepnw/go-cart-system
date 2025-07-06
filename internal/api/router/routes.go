@@ -32,10 +32,10 @@ func (r *RoutesConfig) CartRoutes() {
 
 	repo := repository.NewCartRepository(r.DB)
 	uc := usecase.NewCartUsecase(repo)
-	hdl := handler.NewCartHandler(uc)
+	hdl := handler.NewCartHandler(uc, r.Middlware)
 
 	routes.Post("/", hdl.AddItems)
-	routes.Get("/:cartID", hdl.GetCart)
+	routes.Get("/", hdl.GetCart)
 	routes.Patch("/", hdl.UpdateQuantity)
 	routes.Delete("/:id", hdl.DeleteItem)
 }

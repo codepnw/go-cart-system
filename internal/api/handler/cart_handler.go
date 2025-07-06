@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/codepnw/go-cart-system/internal/api/middleware"
 	"github.com/codepnw/go-cart-system/internal/api/response"
 	"github.com/codepnw/go-cart-system/internal/dto"
 	"github.com/codepnw/go-cart-system/internal/usecase"
@@ -9,12 +10,14 @@ import (
 )
 
 type cartHandler struct {
+	mid      *middleware.Middleware
 	uc       usecase.CartUsecase
 	validate *validator.Validate
 }
 
-func NewCartHandler(uc usecase.CartUsecase) *cartHandler {
+func NewCartHandler(uc usecase.CartUsecase, mid *middleware.Middleware) *cartHandler {
 	return &cartHandler{
+		mid:      mid,
 		uc:       uc,
 		validate: validator.New(),
 	}
@@ -39,12 +42,12 @@ func (h *cartHandler) AddItems(ctx *fiber.Ctx) error {
 }
 
 func (h *cartHandler) GetCart(ctx *fiber.Ctx) error {
-	cartID, err := ctx.ParamsInt("cartID")
+	user, err := h.mid.GetCurrentUser(ctx)
 	if err != nil {
-		return response.BadRequestResponse(ctx, err.Error())
+		return response.UnauthorizedResponse(ctx, err.Error())
 	}
 
-	items, err := h.uc.GetCart(ctx.Context(), int64(cartID))
+	items, err := h.uc.GetCart(ctx.Context(), int64(user.ID))
 	if err != nil {
 		return response.InternalServerError(ctx, err)
 	}

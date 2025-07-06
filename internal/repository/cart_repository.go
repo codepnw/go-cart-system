@@ -13,7 +13,7 @@ import (
 
 type CartRepository interface {
 	AddItems(ctx context.Context, items []*domain.CartItems) error
-	GetCart(ctx context.Context, cartID int64) ([]*dto.CartItemDetailsResponse, error)
+	GetCart(ctx context.Context, userID int64) ([]*dto.CartItem, error)
 	UpdateQuantity(ctx context.Context, input *domain.CartItems) error
 	Delete(ctx context.Context, id int64) error
 }
@@ -59,36 +59,35 @@ func (r *cartRepository) AddItems(ctx context.Context, items []*domain.CartItems
 	return nil
 }
 
-func (r *cartRepository) GetCart(ctx context.Context, cartID int64) ([]*dto.CartItemDetailsResponse, error) {
+func (r *cartRepository) GetCart(ctx context.Context, userID int64) ([]*dto.CartItem, error) {
 	query := `
 		SELECT 
 			ci.id AS cart_item_id, 
 			ci.product_id,
 			p.name AS product_name,
 			p.price,
-			ci.quantity,
-			(ci.quantity * p.price) AS total_price_item
+			ci.quantity
 		FROM cart_items ci
 		JOIN products p ON ci.product_id = p.id
-		WHERE ci.cart_id = $1
+		JOIN carts c ON ci.cart_id = c.id
+		WHERE c.user_id = $1
 	`
-	rows, err := r.db.QueryContext(ctx, query, cartID)
+	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var items []*dto.CartItemDetailsResponse
+	var items []*dto.CartItem
 
 	for rows.Next() {
-		var item dto.CartItemDetailsResponse
+		var item dto.CartItem
 		err = rows.Scan(
 			&item.ID,
 			&item.ProductID,
 			&item.ProductName,
 			&item.Price,
 			&item.Quantity,
-			&item.Total,
 		)
 		if err != nil {
 			return nil, err

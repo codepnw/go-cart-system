@@ -1,13 +1,17 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/codepnw/go-cart-system/config"
 	"github.com/codepnw/go-cart-system/internal/api/response"
+	"github.com/codepnw/go-cart-system/internal/domain"
 	"github.com/codepnw/go-cart-system/internal/utils/security"
 	"github.com/gofiber/fiber/v2"
 )
+
+const userContextKey = "user"
 
 type Middleware struct {
 	cfg   *config.EnvConfig
@@ -39,7 +43,15 @@ func (m *Middleware) Authorize() fiber.Handler {
 			return response.UnauthorizedResponse(ctx, err.Error())
 		}
 
-		ctx.Locals("user", user)
+		ctx.Locals(userContextKey, user)
 		return ctx.Next()
 	}
+}
+
+func (m *Middleware) GetCurrentUser(ctx *fiber.Ctx) (*domain.User, error) {
+	user, ok := ctx.Locals(userContextKey).(*domain.User)
+	if !ok || user == nil {
+		return nil, errors.New("unauthorized")
+	}
+	return user, nil
 }
