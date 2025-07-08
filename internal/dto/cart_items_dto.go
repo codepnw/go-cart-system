@@ -5,10 +5,9 @@ type CreateCartItems struct {
 	Items  []*CartItemRequest `json:"items" validate:"required,min=1"`
 }
 
-type UpdateCartItems struct {
-	CartID    int64 `json:"cart_id" validate:"required"`
+type UpdateCartItem struct {
 	ProductID int64 `json:"product_id" validate:"required"`
-	Quantity  int   `json:"quantity" validate:"required,gte=1,lte=30"`
+	Quantity  int   `json:"quantity" validate:"required,min=0"`
 }
 
 type CartItemRequest struct {

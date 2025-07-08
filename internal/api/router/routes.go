@@ -30,8 +30,9 @@ func NewAPIRoutes(cfg *RoutesConfig) *RoutesConfig {
 func (r *RoutesConfig) CartRoutes() {
 	routes := r.App.Group("/cart", r.Middlware.Authorize())
 
-	repo := repository.NewCartRepository(r.DB)
-	uc := usecase.NewCartUsecase(repo)
+	cartRepo := repository.NewCartRepository(r.DB)
+	prodRepo := repository.NewProductRepository(r.DB)
+	uc := usecase.NewCartUsecase(cartRepo, prodRepo)
 	hdl := handler.NewCartHandler(uc, r.Middlware)
 
 	routes.Post("/", hdl.AddItems)

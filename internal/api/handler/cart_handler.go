@@ -56,17 +56,24 @@ func (h *cartHandler) GetCart(ctx *fiber.Ctx) error {
 }
 
 func (h *cartHandler) UpdateQuantity(ctx *fiber.Ctx) error {
-	var req dto.UpdateCartItems
+	user, err := h.mid.GetCurrentUser(ctx)
+	if err != nil {
+		return response.UnauthorizedResponse(ctx, err.Error())
+	}
+
+	var req []dto.UpdateCartItem
 
 	if err := ctx.BodyParser(&req); err != nil {
 		return response.BadRequestResponse(ctx, err.Error())
 	}
 
-	if err := h.validate.Struct(req); err != nil {
-		return response.BadRequestResponse(ctx, err.Error())
+	for _, i := range req {
+		if err := h.validate.Struct(i); err != nil {
+			return response.BadRequestResponse(ctx, err.Error())
+		}
 	}
 
-	if err := h.uc.UpdateQuantity(ctx.Context(), &req); err != nil {
+	if err := h.uc.UpdateQuantity(ctx.Context(), user.ID, req); err != nil {
 		return response.InternalServerError(ctx, err)
 	}
 

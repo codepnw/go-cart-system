@@ -3,11 +3,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/codepnw/go-cart-system/internal/domain"
 	"github.com/codepnw/go-cart-system/internal/dto"
 	"github.com/codepnw/go-cart-system/internal/repository"
+	"github.com/codepnw/go-cart-system/internal/utils/errs"
 )
 
 const queryTimeOut = time.Second * 5
@@ -15,19 +17,23 @@ const queryTimeOut = time.Second * 5
 type CartUsecase interface {
 	AddItems(ctx context.Context, req *dto.CreateCartItems) error
 	GetCart(ctx context.Context, userID int64) (*dto.CartResponse, error)
-	UpdateQuantity(ctx context.Context, input *dto.UpdateCartItems) error
-	DeleteItem(ctx context.Context, id int64) error
+	UpdateQuantity(ctx context.Context, userID int64, items []dto.UpdateCartItem) error
+	DeleteItem(ctx context.Context, itemID int64) error
 }
 
 type cartUsecase struct {
-	repo repository.CartRepository
+	cartRepo repository.CartRepository
+	prodRepo repository.ProductRepository
 }
 
-func NewCartUsecase(repo repository.CartRepository) CartUsecase {
-	return &cartUsecase{repo: repo}
+func NewCartUsecase(cartRepo repository.CartRepository, prodRepo repository.ProductRepository) CartUsecase {
+	return &cartUsecase{
+		cartRepo: cartRepo,
+		prodRepo: prodRepo,
+	}
 }
 
-func (u *cartUsecase) AddItems(ctx context.Context, req *dto.CreateCartItems) error {
+func (uc *cartUsecase) AddItems(ctx context.Context, req *dto.CreateCartItems) error {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
@@ -48,14 +54,14 @@ func (u *cartUsecase) AddItems(ctx context.Context, req *dto.CreateCartItems) er
 		})
 	}
 
-	return u.repo.AddItems(ctx, items)
+	return uc.cartRepo.AddItems(ctx, items)
 }
 
-func (u *cartUsecase) GetCart(ctx context.Context, userID int64) (*dto.CartResponse, error) {
+func (uc *cartUsecase) GetCart(ctx context.Context, userID int64) (*dto.CartResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	items, err := u.repo.GetCart(ctx, userID)
+	items, err := uc.cartRepo.GetCart(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,22 +81,58 @@ func (u *cartUsecase) GetCart(ctx context.Context, userID int64) (*dto.CartRespo
 	}, nil
 }
 
-func (u *cartUsecase) UpdateQuantity(ctx context.Context, input *dto.UpdateCartItems) error {
+func (uc *cartUsecase) UpdateQuantity(ctx context.Context, userID int64, items []dto.UpdateCartItem) error {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	item := domain.CartItems{
-		ID:        input.CartID,
-		Quantity:  input.Quantity,
-		ProductID: input.ProductID,
+	for _, item := range items {
+		// check cartItem
+		cartItem, err := uc.cartRepo.GetCartItem(ctx, userID, item.ProductID)
+		if err != nil {
+			return fmt.Errorf("get cart item failed: %w", err)
+		}
+		if cartItem == nil {
+			continue
+		}
+
+		// find product
+		product, err := uc.prodRepo.GetByID(ctx, item.ProductID)
+		if err != nil {
+			return fmt.Errorf("get product failed: %w", err)
+		}
+		if product == nil {
+			return errs.ErrProductNotFound
+		}
+
+		// check stock
+		if item.Quantity > product.Stock {
+			return errors.New("product not enough")
+		}
+
+		if item.Quantity == 0 {
+			if err := uc.cartRepo.DeleteCartItem(ctx, cartItem.ID); err != nil {
+				return fmt.Errorf("delete cart item failed: %w", err)
+			}
+			continue
+		}
+
+		// update quantity
+		err = uc.cartRepo.UpdateQuantity(ctx, &domain.CartItems{
+			ID:        cartItem.ID,
+			Quantity:  item.Quantity,
+			ProductID: product.ID,
+		})
+		if err != nil {
+			return fmt.Errorf("update quantity failed: %w", err)
+		}
 	}
 
-	return u.repo.UpdateQuantity(ctx, &item)
+	return nil
 }
 
-func (u *cartUsecase) DeleteItem(ctx context.Context, id int64) error {
+func (uc *cartUsecase) DeleteItem(ctx context.Context, itemID int64) error {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeOut)
 	defer cancel()
 
-	return u.repo.Delete(ctx, id)
+	return uc.cartRepo.DeleteCartItem(ctx, itemID)
 }

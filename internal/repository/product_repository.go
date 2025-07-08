@@ -47,7 +47,7 @@ func (r *productRepository) Create(ctx context.Context, input *domain.Product) e
 
 func (r *productRepository) GetByID(ctx context.Context, id int64) (*domain.Product, error) {
 	query := `
-		SELECT id, name, price, created_at, updated_at
+		SELECT id, name, price, stock, created_at, updated_at
 		FROM products WHERE id = $1
 	`
 	var product domain.Product
@@ -55,6 +55,7 @@ func (r *productRepository) GetByID(ctx context.Context, id int64) (*domain.Prod
 		&product.ID,
 		&product.Name,
 		&product.Price,
+		&product.Stock,
 		&product.CreatedAt,
 		&product.UpdatedAt,
 	)

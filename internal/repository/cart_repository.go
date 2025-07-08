@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/codepnw/go-cart-system/internal/domain"
@@ -15,7 +16,8 @@ type CartRepository interface {
 	AddItems(ctx context.Context, items []*domain.CartItems) error
 	GetCart(ctx context.Context, userID int64) ([]*dto.CartItem, error)
 	UpdateQuantity(ctx context.Context, input *domain.CartItems) error
-	Delete(ctx context.Context, id int64) error
+	DeleteCartItem(ctx context.Context, itemID int64) error
+	GetCartItem(ctx context.Context, userID, productID int64) (*domain.CartItems, error)
 }
 
 type cartRepository struct {
@@ -102,6 +104,8 @@ func (r *cartRepository) GetCart(ctx context.Context, userID int64) ([]*dto.Cart
 func (r *cartRepository) UpdateQuantity(ctx context.Context, input *domain.CartItems) error {
 	query := `UPDATE cart_items SET quantity = $1 WHERE id = $2 AND product_id = $3`
 
+	log.Printf("UPDATE cart_items SET quantity = %d WHERE id = %d AND product_id = %d", input.Quantity, input.ID, input.ProductID)
+
 	res, err := r.db.ExecContext(ctx, query, input.Quantity, input.ID, input.ProductID)
 	if err != nil {
 		return err
@@ -119,8 +123,8 @@ func (r *cartRepository) UpdateQuantity(ctx context.Context, input *domain.CartI
 	return nil
 }
 
-func (r *cartRepository) Delete(ctx context.Context, id int64) error {
-	res, err := r.db.ExecContext(ctx, "DELETE FROM cart_items WHERE id = $1", id)
+func (r *cartRepository) DeleteCartItem(ctx context.Context, itemID int64) error {
+	res, err := r.db.ExecContext(ctx, "DELETE FROM cart_items WHERE id = $1", itemID)
 	if err != nil {
 		return err
 	}
@@ -135,4 +139,26 @@ func (r *cartRepository) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (r *cartRepository) GetCartItem(ctx context.Context, userID, productID int64) (*domain.CartItems, error) {
+	query := `
+		SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity
+		FROM cart_items ci
+		JOIN carts c ON ci.cart_id = c.id
+		WHERE c.user_id = $1 AND ci.product_id = $2
+		LIMIT 1
+	`
+	var item domain.CartItems
+	err := r.db.QueryRowContext(ctx, query, userID, productID).Scan(
+		&item.ID,
+		&item.CartID,
+		&item.ProductID,
+		&item.Quantity,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, err
 }
