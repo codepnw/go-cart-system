@@ -27,6 +27,19 @@ func NewAPIRoutes(cfg *RoutesConfig) *RoutesConfig {
 	}
 }
 
+func (r *RoutesConfig) OrderRoutes() {
+	routes := r.App.Group("/order", r.Middlware.Authorize())
+
+	orderRepo := repository.NewOrderRepository(r.DB)
+	cartRepo := repository.NewCartRepository(r.DB)
+	prodRepo := repository.NewProductRepository(r.DB)
+
+	orderUc := usecase.NewOrderUsecase(orderRepo, cartRepo, prodRepo)
+	orderHdl := handler.NewOrderHandler(r.Middlware, orderUc)
+
+	routes.Get("/", orderHdl.Checkout)
+}
+
 func (r *RoutesConfig) CartRoutes() {
 	routes := r.App.Group("/cart", r.Middlware.Authorize())
 

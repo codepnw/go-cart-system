@@ -41,6 +41,7 @@ func main() {
 	routes.CartRoutes()
 	routes.ProductRoutes()
 	routes.UserRoutes()
+	routes.OrderRoutes()
 
 	// run server
 	if err = app.Listen(cfg.AppPort); err != nil {
